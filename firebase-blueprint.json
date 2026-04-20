@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and statistics",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "totalEntries": { "number": "number" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "LogEntry": {
+      "title": "Log Entry",
+      "description": "Daily developer journal entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "did": { "type": "string" },
+        "blockers": { "type": "string" },
+        "next": { "type": "string" },
+        "mood": { "type": "number", "enum": [1, 2, 3, 4, 5] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "uid": { "type": "string" }
+      },
+      "required": ["date", "did", "uid"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/logs/{uid}/entries/{entryId}": {
+      "schema": "LogEntry",
+      "description": "Individual log entries for a user"
+    }
+  }
+}

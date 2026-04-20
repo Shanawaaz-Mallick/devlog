@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Entities ---
+
+    // User Profile
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow create: if isOwner(uid) 
+        && request.resource.data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isOwner(uid)
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if false; // Per PRD, deletion is a special batch process or not mentioned as simple delete
+    }
+
+    // Log Entries
+    match /logs/{uid}/entries/{entryId} {
+      allow list, get: if isOwner(uid);
+      
+      allow create: if isOwner(uid)
+        && isValidLogEntry(request.resource.data)
+        && request.resource.data.uid == request.auth.uid;
+        
+      allow update: if isOwner(uid)
+        && isValidLogEntry(request.resource.data)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.id == resource.data.id;
+        
+      allow delete: if isOwner(uid);
+    }
+
+    function isValidLogEntry(data) {
+      return data.date is string
+        && data.did is string && data.did.size() >= 10
+        && (data.blockers == null || data.blockers is string)
+        && (data.next == null || data.next is string)
+        && (data.mood == null || (data.mood >= 1 && data.mood <= 5))
+        && (data.tags == null || (data.tags is list && data.tags.size() <= 10));
+    }
+  }
+}
